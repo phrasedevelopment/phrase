@@ -3,7 +3,7 @@
 module.exports = {
     classrooms: function(pouchDB, dbName) {
         /*Initalizes pouchDB with the database dbName(defined in /app/index.js) and gives it a variable reference db*/
-        var db = pouchDB(dbName);
+        var db = pouchDB(dbName + '/classrooms');
         /*Returns the list of all classrooms on database*/
         function list() {
             return db.allDocs({
@@ -21,16 +21,11 @@ module.exports = {
                     });
                 });
         }
-        /*Create a new classroom and save to database*/
-        function create(classroom) {
-            classroom.type = 'classroom';
-            classroom._id = 'classroom-' + (new Date()).toISOString();
-            return db.put(classroom);
-        }
-        /*Query a custom view for artilcesby classroom id*/
-        function getArticles(id) {
-            return db.query('articlesClass/articlesClass', {
-                    key: id,
+
+        /*Query a custom view for classrooms by current user id*/
+        function listByUser(user) {
+            return db.query('my_index/by_user', {
+                    key: user,
                     include_docs: true
                 })
                 .then(function(res) {
@@ -40,8 +35,32 @@ module.exports = {
                         return r.doc;
                     });
                 });
-
         }
+
+        /*Create a new classroom and save to database*/
+        function create(classroom) {
+            classroom.type = 'classroom';
+            classroom._id = 'classroom-' + (new Date()).toISOString();
+            return db.put(classroom);
+        }
+
+        /*Query a custom view for articles by classroom id*/
+        /*
+        function getArticles(id) {
+            return db.query('my_index/by_classroom', {
+                    key: id,
+                    include_docs: true
+                })
+                .then(function(res) {
+                    // Gets
+                    console.log(res.rows);
+                    return res.rows.map(function(r) {
+                        return r.doc;
+                    });
+                });
+        }
+        */
+
         /*Get classrooms by id*/
         function get(id) {
             console.log(id);
@@ -62,7 +81,8 @@ module.exports = {
             get: get,
             update: update,
             remove: remove,
-            getArticles: getArticles
+            //getArticles: getArticles,
+            listByUser: listByUser
         });
     }
 };

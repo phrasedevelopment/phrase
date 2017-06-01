@@ -4,16 +4,16 @@ var fs = require('fs');
 /*This part exposes this module to rest of app*/
 module.exports = {
     url: '/new',
-    controller: ['$scope', 'classrooms', '$state', '$mdDialog', controller],
+    controller: ['$scope', 'classrooms', 'users', '$state', '$mdDialog', controller],
     template: fs.readFileSync(__dirname + '/template.html', 'utf-8')
 };
 
-function controller($scope, classrooms, $state, $mdDialog) {
+function controller($scope, classrooms, users, $state, $mdDialog) {
     /*Communicates between two things. We're not sure what this is sorry, but it's needed*/
     var self = this;
     self.tags = [];
     /*Creates a new classroom then goes back to list*/
-    $scope.create = function(classroom) {
+    $scope.create = function(classroom) {  
         classrooms.create(classroom)
             .then(function(res) {
                 $state.go('classrooms.list');
@@ -42,13 +42,84 @@ function controller($scope, classrooms, $state, $mdDialog) {
         $mdDialog.hide();
         console.log('hidden!');
     };
+
     /*Initalizes classroom to avoid undefined references*/
     $scope.classroom = {
         name: '',
         description: '',
-	students: '',
-        color: ''
+	    students: {},
+        color: '',
+        creator: ''
     };
+    $scope.classroom.creator = $scope.activeUser;
+
+    /*Lists all users*/
+    users.list().then(function (res) {
+        $scope.users = res
+    })
+
+    //check for duplicate entries
+    var i = 0;
+    var enteredUsers = [];
+    var size = 0;
+    $scope.addUser = function() {
+        var isAlreadyInClassroom = false;
+        if($scope.classroom.students[0] != null){
+            size = Object.keys($scope.classroom.students).length;
+            if($scope.user == null){
+                console.log("null");
+            }else{
+                for(var a = 0; a < size; a++){
+                    if(JSON.stringify($scope.classroom.students[a].name) == JSON.stringify($scope.user.name)){
+                        isAlreadyInClassroom = true;
+                    }
+                }
+                if(isAlreadyInClassroom == false){
+                    $scope.classroom.students[size] = $scope.user;
+                    size++;
+                }else{
+                    console.log("already in classroom");
+                }   
+            } 
+        }else{
+            if($scope.user == null){
+                console.log("null");
+            }else{
+                $scope.classroom.students = {};
+                $scope.classroom.students[0] = $scope.user;
+                size++;
+            }
+        }
+    }
+
+    //delete users from classroom
+    $scope.index = {value:0};
+    $scope.deleteUser = function() {                 
+        //if there are more users in classroom
+        if(Object.keys($scope.classroom.students).length > 1){
+            //delete selected user
+            $scope.classroom.students[$scope.index.value] = null;
+            //if your deleted user isn't the last index
+            if($scope.index.value != Object.keys($scope.classroom.students).length - 1){
+                for(var i = $scope.index.value; i < Object.keys($scope.classroom.students).length; i++){
+                    if(i < Object.keys($scope.classroom.students).length - 1){
+                        //start at index where you deleted user and replace other user indexs with the next index and stop at the last index
+                        $scope.classroom.students[i] = $scope.classroom.students[i+1];
+                    }
+                }
+            }
+            console.log("size(del)" + Object.keys($scope.classroom.students).length);
+            //delete the last index
+            delete $scope.classroom.students[Object.keys($scope.classroom.students).length-1];
+            console.log("size(del)" + Object.keys($scope.classroom.students).length);
+        }else{
+            delete $scope.classroom.students[0];
+        }
+        console.log("index:" + $scope.index.value);
+        console.log("size(del)" + Object.keys($scope.classroom.students).length);
+    }
+
+
 
     /*Shows color picker dialog*/
     /*A lot of this code comes from /*https://material.angularjs.org/latest/#/demo/material.components.slider*/
